@@ -8,7 +8,7 @@ import numpy as np
 from collections import deque
 from multiprocessing import Process, Lock
 from queue import Empty
-from controller_push_IKQP.commons.logger import logger
+from hybrid_push_control_panda.commons.logger import logger
 
 
 class SimulationError(Exception):

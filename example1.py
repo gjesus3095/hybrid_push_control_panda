@@ -15,10 +15,10 @@ from enum import Enum, auto
 from scipy.spatial.transform import Rotation as R
 
 # Custom Imports
-from simulation.mujoco_interface import MujocoInterface
-from commons.logger import logger
-from controllers.ik_qp import InverseKinematicsController, AdmittanceFilter
-from controllers.ik_qp import LowPassFilter, AdmittanceFilterParams
+from hybrid_push_control_panda.simulation.mujoco_interface import MujocoInterface
+from hybrid_push_control_panda.commons.logger import logger
+from hybrid_push_control_panda.controllers.ik_qp import InverseKinematicsController, AdmittanceFilter
+from hybrid_push_control_panda.controllers.ik_qp import LowPassFilter, AdmittanceFilterParams
 
 # ==================================================================================================
 # 1. CONFIGURATION & CONSTANTS
