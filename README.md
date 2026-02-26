@@ -155,9 +155,13 @@ This project utilized AI assistance for the following tasks:
 * **Polishing:** Enhancing code quality with type hints, better variable naming, and standardized formatting.
 * **Documentation:** Generating this `README.md` by analyzing and transcribing handwritten notes, diagrams, and repository screenshots.
 
-## 🛢️ Useful Repos
+## 🛢️ Used Repos
 * [mujoco_menagerie](https://github.com/vikashplus/furniture_sim) : MuJoCo models of franka robot.
-* [furniture_sim](https://github.com/vikashplus/furniture_sim) : Table and objects for simulation env. 
+* [furniture_sim](https://github.com/vikashplus/furniture_sim) : Table and objects for simulation env.
+
+## License
+MIT License © 2026 Gonzalo Meza
+
 ```
 
 ```
