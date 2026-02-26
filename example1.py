@@ -11,6 +11,7 @@ License: No License
 import os
 import time
 import numpy as np
+from pathlib import Path
 from enum import Enum, auto
 from scipy.spatial.transform import Rotation as R
 
@@ -23,10 +24,12 @@ from hybrid_push_control_panda.controllers.ik_qp import LowPassFilter, Admittanc
 # ==================================================================================================
 # 1. CONFIGURATION & CONSTANTS
 # ==================================================================================================
+# Path to this file → project root → target file
+BASE_DIR = Path(__file__).resolve().parents[1]   # adjust depth if needed
+XML_FILE = str(BASE_DIR / "hybrid_push_control_panda"/ "model" / "scene.xml")
 
-# --- File Paths ---
-BASE_DIR = os.path.expanduser("~/workspace")  # <=============================== WRITE HERE YOUR BASE DIRECTORY
-XML_FILE = os.path.join(BASE_DIR, "hybrid_push_control_panda", "model", "scene.xml")
+if not Path(XML_FILE).is_file():
+    raise FileNotFoundError(f"XML file not found: {XML_FILE}. Check the path and adjust BASE_DIR if necessary.")
 
 # --- Geometry & Actuator Definition ---
 LEFT_EE_GEOMS = ["finger_l1", "finger_l2", "finger_l3", "finger_l4", "finger_l5"]
