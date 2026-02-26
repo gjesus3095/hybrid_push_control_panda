@@ -5,8 +5,8 @@ from multiprocessing import Queue
 from queue import Empty
 from typing import Dict, List, Union, Tuple, Any, Optional
 
-from robot_interface import RobotInterface
-from mujoco_sim import SimulationError, MujocoWorker
+from hybrid_push_control_panda.simulation.robot_interface import RobotInterface
+from hybrid_push_control_panda.simulation.mujoco_sim import SimulationError, MujocoWorker
 from hybrid_push_control_panda.commons.logger import logger
 
 class MujocoInterface(RobotInterface):

@@ -26,7 +26,7 @@ from hybrid_push_control_panda.controllers.ik_qp import LowPassFilter, Admittanc
 
 # --- File Paths ---
 BASE_DIR = os.path.expanduser("~/workspace")  # <=============================== WRITE HERE YOUR BASE DIRECTORY
-XML_FILE = os.path.join(BASE_DIR, "controller_push_IKQP", "model", "scene.xml")
+XML_FILE = os.path.join(BASE_DIR, "hybrid_push_control_panda", "model", "scene.xml")
 
 # --- Geometry & Actuator Definition ---
 LEFT_EE_GEOMS = ["finger_l1", "finger_l2", "finger_l3", "finger_l4", "finger_l5"]
