@@ -29,7 +29,7 @@ controller_push_IKQP
 │   ├── mujoco_sim.py         # Main simulation loop and multiprocessing handling
 │   └── robot_interface.py    # Standardized interface for robot actuation
 ├── test_videos/              # Demo recordings of displacements
-├── example1.py               # Main entry point / Example execution script
+├── main.py               # Main entry point / Example execution script
 └── requirements.txt          # Python dependencies
 
 ```
@@ -53,7 +53,7 @@ pip install -r requirements.txt
 
 ### Usage
 
-1. Enter to the main example script [example1](./example1.py) to start the simulation and control loop. 
+1. Enter to the main example script [example](main.py) to start the simulation and control loop. 
 2. Write your directory path if cloned repo is inside a project.  
 3. Run the script 
 

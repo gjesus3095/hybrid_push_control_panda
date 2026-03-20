@@ -181,7 +181,7 @@ class InverseKinematicsController:
         return q / n
 
     @staticmethod
-    def check_quaternion(quat: np.ndarray) -> np.ndarray:
+    def normalize_quaternion(quat: np.ndarray) -> np.ndarray:
         """
         Enforces a positive scalar component (w >= 0) to ensure uniqueness
         in 'double cover' representation.
@@ -211,8 +211,8 @@ class InverseKinematicsController:
         Returns:
             e_phi (np.ndarray): 3D orientation error vector.
         """
-        q_des = self.check_quaternion(q_des)
-        q_cur = self.check_quaternion(q_cur)
+        q_des = self.normalize_quaternion(q_des)
+        q_cur = self.normalize_quaternion(q_cur)
 
         # Split Vector (eps) and Scalar (eta) parts
         eps_des = q_des[:3]

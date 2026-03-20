@@ -1,6 +1,6 @@
 """
 Project: Controlled Push IKQP
-Author: Gonzalo Meza (https://sites.google.com/view/gonzalomeza)
+Author: Gonzalo Meza
 Date: January 2026
 Description:
     Main execution script for the Franka Emika Panda push task.
@@ -302,7 +302,7 @@ R_euler = R.from_euler('zyx', [phi, theta, psi]).as_matrix()
 # Apply rotation (global frame)
 quat_des_global = R.from_matrix(R_euler).as_quat()
 quat_des_global = ikQP.change_quaternion_xyzw(quat_des_global)
-quat_des_global = ikQP.check_quaternion(quat_des_global)
+quat_des_global = ikQP.normalize_quaternion(quat_des_global)
 
 # --- 3. Set Initial Sim State ---
 logger.info("[INIT] | Setting initial configuration and stabilizing...")
@@ -340,7 +340,7 @@ while fsm.state != State.DONE:
     q = q_dict[0].reshape(-1)[:N_DOFS]
     fsm_ctx.curr_p, quat_cur = ikQP.extract_position_quat_from_pose(robot_interface.get_pose(FRAME_CONTROL))
     quat_cur = ikQP.change_quaternion_xyzw(quat_cur)
-    fsm_ctx.curr_quat = ikQP.check_quaternion(quat_cur)
+    fsm_ctx.curr_quat = ikQP.normalize_quaternion(quat_cur)
 
     # ----------------------------------------------------------------------------------------------
     # II. STATE MACHINE LOGIC
