@@ -3,6 +3,7 @@ import scipy.sparse as sp
 import osqp
 from typing import Tuple, List, Optional, Union
 from dataclasses import dataclass
+from hybrid_push_control_panda.commons.math_helpers import MathHelpers
 
 # ==================================================================================================
 # FILTERS FOR MEASUREMENTS
@@ -98,7 +99,7 @@ class AdmittanceFilter:
 # DIFF INVERSE KINEMATICS CONTROLLER (QP)
 # ==================================================================================================
 
-class InverseKinematicsController:
+class InverseKinematicsController(MathHelpers):
     """
     Differential Inverse Kinematics controller using Quadratic Programming (QP).
     Handles joint limits, velocity limits, and singularity damping.
@@ -155,50 +156,6 @@ class InverseKinematicsController:
             raise RuntimeError(f"OSQP Solver failed: {res.info.status}")
 
         return res.x
-
-    # ----------------------------------------------------------------------------------------------
-    # 2. HELPER METHODS (MATH & QUATERNIONS)
-    # ----------------------------------------------------------------------------------------------
-    @staticmethod
-    def extract_position_quat_from_pose(pose) -> Tuple[np.ndarray, np.ndarray]:
-        """
-        Parses pose data into position and quaternion arrays.
-        Expected format: (pos(3,), quat(4,))
-        """
-        if isinstance(pose, (tuple, list)) and len(pose) == 2:
-            p = np.asarray(pose[0], dtype=float).reshape(3)
-            q = np.asarray(pose[1], dtype=float).reshape(4)
-            return p, q
-        raise ValueError(f"Unsupported pose format, expected (pos, quat), got {type(pose)}")
-
-    @staticmethod
-    def quat_normalize(q: np.ndarray) -> np.ndarray:
-        """ Safely normalizes a quaternion. Returns identity if norm is near zero. """
-        q = np.asarray(q, dtype=float).reshape(4)
-        n = np.linalg.norm(q)
-        if n < 1e-12:
-            return np.array([0.0, 0.0, 0.0, 1.0])
-        return q / n
-
-    @staticmethod
-    def normalize_quaternion(quat: np.ndarray) -> np.ndarray:
-        """
-        Enforces a positive scalar component (w >= 0) to ensure uniqueness
-        in 'double cover' representation.
-        Assumes input format [x, y, z, w].
-        """
-        if quat[3] < 0:
-            return -quat
-        return quat
-
-    @staticmethod
-    def change_quaternion_xyzw(quat: np.ndarray) -> np.ndarray:
-        """
-        Permutes quaternion elements.
-        NOTE: Based on array logic: [0,1,2,3] -> [1,2,3,0].
-        If input is [w, x, y, z] (MuJoCo), output is [x, y, z, w] (SciPy).
-        """
-        return np.array([quat[1], quat[2], quat[3], quat[0]])
 
     def quat_error_eps_form(self, q_des: np.ndarray, q_cur: np.ndarray) -> np.ndarray:
         """
@@ -274,6 +231,7 @@ class InverseKinematicsController:
         pose = self.robot.get_pose(ee_name)
         p, quat_cur = self.extract_position_quat_from_pose(pose)
         quat_cur = self.change_quaternion_xyzw(quat_cur)
+        quat_cur = self.align_quaternion_sign(quat_des, quat_cur) # Ensure shortest path for orientation error
 
         # 2. Jacobian Computation
         J = np.asarray(self.robot.get_jacobian(ee_name), dtype=float)
