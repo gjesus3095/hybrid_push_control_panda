@@ -36,6 +36,8 @@ LEFT_EE_GEOMS   = ["finger_l1", "finger_l2", "finger_l3", "finger_l4", "finger_l
 RIGHT_EE_GEOMS  = ["finger_r1", "finger_r2", "finger_r3", "finger_r4", "finger_r5"]
 EE_COVER_GEOMS  = ["hand_cover0", "hand_cover1", "hand_cover2", "hand_cover3", "hand_cover4", "hand_cover5"]
 OBJECT_NAMES    = ["box_geom"]
+# Combine all geometry names for contact detection in mujoco interface
+geometry_contact_names = LEFT_EE_GEOMS + RIGHT_EE_GEOMS + EE_COVER_GEOMS
 
 # --- Control Parameters ---
 N_DOFS  = 7  # Set all degrees of freedom to control
@@ -77,12 +79,11 @@ pos_weight, orientation_weight = 1, 1
 # 2. INITIALIZATION
 # ==================================================================================================
 # --- MuJoCo Interface Setup ---
-geometry_contact_names = LEFT_EE_GEOMS + RIGHT_EE_GEOMS + EE_COVER_GEOMS
 robot_interface = MujocoInterface(XML_FILE, geometry_contact_names)
 
 # --- Retrieve Actuator and Joint Names ---
 robot_actuator_names = robot_interface.get_actuators_names()
-ee_name = robot_actuator_names[-1]
+ee_name = robot_actuator_names[-1] # Assuming the last actuator corresponds to the end-effector (gripper), adjust if needed
 robot_joint_names = robot_interface.get_joint_names()
 
 logger.info(f"[INIT] | Joints: {len(robot_joint_names)} | Actuators: {len(robot_actuator_names)} | EE: {ee_name}")
@@ -126,7 +127,8 @@ fsm_config = FSMConfig.from_dict({
 transition_params = StateTransitionParams(f_push=Z_FORCE)
 
 # 3. Assemble the Context
-# This object acts as the 'Single Source of Truth' for the entire task.
+# This object acts as the "blackboard" for the FSM, holding all relevant data and interfaces
+# that states and transitions will read from and write to.
 fsm_ctx = FsmContext(
     fsm_config=fsm_config,
     state_transition_params=transition_params
