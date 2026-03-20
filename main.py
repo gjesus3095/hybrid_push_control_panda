@@ -6,7 +6,7 @@ Description:
     Main execution script for the Franka Emika Panda push task.
     Implements a Finite State Machine (FSM) to handle approach,
     contact detection, and hybrid force/position control.
-License: No License
+License: MIT License
 """
 import time
 import numpy as np
@@ -83,10 +83,9 @@ robot_interface = MujocoInterface(XML_FILE, geometry_contact_names)
 
 # --- Retrieve Actuator and Joint Names ---
 robot_actuator_names = robot_interface.get_actuators_names()
-ee_name = robot_actuator_names[-1] # Assuming the last actuator corresponds to the end-effector (gripper), adjust if needed
 robot_joint_names = robot_interface.get_joint_names()
 
-logger.info(f"[INIT] | Joints: {len(robot_joint_names)} | Actuators: {len(robot_actuator_names)} | EE: {ee_name}")
+logger.info(f"[INIT] | Joints: {len(robot_joint_names)} | Actuators: {len(robot_actuator_names)}")
 
 # --- Send Initial Hardware Command ---
 init_joint_position = {n: v for n, v in zip(robot_joint_names, q_init)}

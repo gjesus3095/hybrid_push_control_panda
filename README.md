@@ -1,16 +1,15 @@
-# controller_push_IKQP
+# Hybrid Force/Position Control for Planar Pushing with Franka Emika Panda
 
 ## Project Description
 **Controlled Push of an Object with Franka Emika Panda**
 
-This project implements a controlled push task using a 6-DOF robotic arm (Franka Emika Panda) with a parallel gripper. 
+This project implements a controlled push task using a 7-DOF robotic arm (Franka Emika Panda) with a parallel gripper. 
 The control architecture utilizes **Instantaneous Differential Inverse Kinematics** posed as a Quadratic Program (QP) for position control, 
 combined with a **Hybrid Force/Position** strategy.
 A proportional **Admittance Controller** is implemented to regulate contact force along the vertical (Z) axis while executing planar pushing movements.
 
-System 1 (Inner Control Loop): Position Control via Differential IK (QP)
-
-System 2 (Outer Control Loop): Force Regulation via Admittance Control
+Inner Control Loop: Position Control via Differential IK (QP)
+Outer Control Loop: Force Regulation via Admittance Control
 
 ### Watch the demo videos in the following folder 🎬🎥▶️: [test_videos](./test_videos) 
 
@@ -53,8 +52,8 @@ pip install -r requirements.txt
 
 ### Usage
 
-1. Enter to the main example script [example](main.py) to start the simulation and control loop. 
-2. Write your directory path if cloned repo is inside a project.  
+1. Run to the main example script [main.py](main.py) to start the simulation and control loop. 
+2. Adjust the XML path in [main.py](main.py)  if the repository is nested inside another project.  
 3. Run the script 
 
 This script initializes the environment, connects the `MujocoInterface`, and executes the Finite State Machine (FSM) to push the box.
@@ -66,7 +65,7 @@ This script initializes the environment, connects the `MujocoInterface`, and exe
 ### 1. The Challenge
 
 * **Task:** Controlled push of a non-deformable box (`box_geom`) on a table.
-* **Agent:** 6-DOF Robotic Arm + Parallel End-Effector.
+* **Agent:** 7-DOF Robotic Arm + Parallel End-Effector.
 * **Sensing:** Joint positions + Contact/Force sensors (5 fingertip pads per finger R and L).
 * **Environment:**
   * Table with a box placed at a random position within reachable workspace.
@@ -79,7 +78,7 @@ This script initializes the environment, connects the `MujocoInterface`, and exe
   * Bad pose with retry policy (see FSM).
   * Loss of contact handled by admittance controller.
 * **Success Criteria:**
-  * Object translates the requested .
+  * Object reaches the desired planar displacement (X, Y).
   * Stable contact established (confirmed via force pads).
   * Controller handles different initial object poses robustly and different robot initial configurations.
 * **Safety Considerations**
@@ -96,7 +95,7 @@ The high-level logic is governed by a State Machine to handle approach, contact,
 | **2. SEEK CONTACT**     | Move vertically slowly to find the object.                                                                                                          | Force sensors > Threshold (Contact detected) |
 | **2.5 POSE RECOVERY**   | (NOT IMPLEMENTED) Failure: Bad object pose. Mitigation: After a time passed w/o contact. This state will retry around a radii (x,y) to seek contact | Force sensors > Threshold (Contact detected) |
 | **3. CLOSE GRIPPER**    | Close fingers until firm grip on object.                                                                                                            | Both fingers in contact |
-| **4. FORCE REGULATION** | **Hybrid Control**: Push in  while regulating  via admittance.                                                                                      | Target  reached |
+| **4. FORCE REGULATION** | **Hybrid Control**: Push in the planar direction (X, Y) while regulating contact force in Z via admittance control.                                                                                     | Target  reached |
 | **5. OPEN/RETRACT**     | Release object and move to safe home position.                                                                                                      | Task complete |
 
 *Mitigation Strategy:* If "Seek Contact" fails (bad pose or timeout), the system enters a **Retry Policy**, returning to a safe height and retrying with a radius search.
@@ -110,14 +109,16 @@ The high-level logic is governed by a State Machine to handle approach, contact,
 We solve the instantaneous kinematics problem by formulating it as a **Quadratic Program (QP)**. This allows us to handle joint limits and velocity bounds strictly.
 
 **The Objective:**
-Minimize the error between the desired task-space velocity () and the current robot velocity (), while regularizing joint velocities:
+Minimize the error between the desired task-space velocity ($p_d$) and the current robot velocity ($\dot{q}$), while regularizing joint velocities:
 $$\min_{\dot{q}} \quad \frac{1}{2} || (\dot p_d - J(q)\dot{q}) +  (p_d-p_{current}) ||^2_W + \frac{1}{2} \lambda ||\dot{q}||^2$$
 Subject to:
+$$\quad q_{\min} \leq q \leq q_{\max}, \quad$$
+$$\dot{q}_{\min} \leq \dot{q} \leq \dot{q}_{\max}$$
 
 Where:
 
 * $p_d$  Is the desired position (velocity here \dot p_d assumed as zero in steady-state).
-* $p_current$  Is current robot position (forward kinematics).
+* $p_{current}$  Is current robot position (forward kinematics).
 * $J(q)$  is the robot Jacobian.
 * $Kp$  is the CLIK gain.
 * $\lambda$ is a regulating factor (Levy-Levenberg) to regulate the constrained solution.
@@ -139,7 +140,7 @@ This displacement $\Delta x_z$ is added to the IK target, making the robot "comp
 
 * **`MujocoInterface`**: Handles the communication with the simulation, retrieving telemetry (poses, contacts) and sending joint commands.
 * **`InverseKinematicsController`**: The solver class. It accepts a target pose and outputs joint velocities using `osqp` to solve the optimization problem described above.
-* **`AdmittanceController`**: A dumb proportional controller that modifies the Z-reference based on force feedback.
+* **`AdmittanceController`**: A "dumb" proportional controller that modifies the Z-reference based on force feedback.
 
 ## 📖 References 
 
@@ -155,8 +156,8 @@ This project utilized AI assistance for the following tasks:
 * **Polishing:** Enhancing code quality with type hints, better variable naming, and standardized formatting.
 * **Documentation:** Generating this `README.md` by analyzing and transcribing handwritten notes, diagrams, and repository screenshots.
 
-## 🛢️ Used Repos
-* [mujoco_menagerie](https://github.com/vikashplus/furniture_sim) : MuJoCo models of franka robot.
+## 🛢️ Assets
+* [mujoco_menagerie](https://github.com/google-deepmind/mujoco_menagerie) : MuJoCo models of franka robot.
 * [furniture_sim](https://github.com/vikashplus/furniture_sim) : Table and objects for simulation env.
 
 ## License
