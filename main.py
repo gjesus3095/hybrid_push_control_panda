@@ -97,9 +97,9 @@ robot_interface.set_control(init_actuator_command) # Move to the desired initial
 
 # Apply rotation (global frame)
 R_euler = R.from_euler(rotation_def, ee_ori_target).as_matrix()
-pick_ori_des = R.from_matrix(R_euler).as_quat()
-pick_ori_des = math_helpers.change_quaternion_xyzw(pick_ori_des)
-pick_ori_des = math_helpers.normalize_quaternion(pick_ori_des)
+push_ori_des = R.from_matrix(R_euler).as_quat()
+push_ori_des = math_helpers.change_quaternion_xyzw(push_ori_des)
+push_ori_des = math_helpers.normalize_quaternion(push_ori_des)
 
 # --- 3. Set Initial Sim State ---
 logger.info("[INIT] | Setting initial configuration and stabilizing...")
@@ -142,7 +142,7 @@ params = AdmittanceFilterParams(m=2.0, d=200.0, k=1, max_x=0.3, max_v=0.2, max_a
 fsm_ctx.interface  = robot_interface
 fsm_ctx.ik         = ikQP
 fsm_ctx.lp_filter  = LowPassFilter(cutoff_hz=50)
-fsm_ctx.quat_ref   = pick_ori_des
+fsm_ctx.quat_ref   = push_ori_des
 fsm_ctx.admittance = AdmittanceFilter(params, x0=0.0, v0=0.0)
 
 # 5. Initialize & Boot the FSM
@@ -155,49 +155,54 @@ fsm.set_state(State.APPROACH)
 
 logger.info(f"[START] | Control loop started. Initial State: {fsm.state.name}")
 
-while fsm.state != State.DONE:
-    loop_start_time = time.time()
+try:
+    while fsm.state != State.DONE:
+        loop_start_time = time.time()
 
-    # ----------------------------------------------------------------------------------------------
-    # I. TELEMETRY UPDATE
-    # ----------------------------------------------------------------------------------------------
-    q_dict = robot_interface.get_joints_telemetry()
-    q = q_dict[0].reshape(-1)[:N_DOFS]
-    fsm_ctx.curr_p, quat_cur = ikQP.extract_position_quat_from_pose(robot_interface.get_pose(FRAME_CONTROL))
-    quat_cur = ikQP.change_quaternion_xyzw(quat_cur)
-    fsm_ctx.curr_quat = ikQP.normalize_quaternion(quat_cur)
+        # ------------------------------------------------------------------------------------------
+        # I. TELEMETRY UPDATE
+        # ------------------------------------------------------------------------------------------
+        q_dict = robot_interface.get_joints_telemetry()
+        q = q_dict[0].reshape(-1)[:N_DOFS]
+        fsm_ctx.curr_p, quat_cur = ikQP.extract_position_quat_from_pose(
+            robot_interface.get_pose(FRAME_CONTROL)
+        )
+        quat_cur = ikQP.change_quaternion_xyzw(quat_cur)
+        fsm_ctx.curr_quat = ikQP.normalize_quaternion(quat_cur)
 
-    # ----------------------------------------------------------------------------------------------
-    # II. STATE MACHINE LOGIC
-    # ----------------------------------------------------------------------------------------------
-    # Note: The FSM logic updates the pose_ref, quat_ref, wrench_ref, and joint_vel_weight in the context based on the current state and transitions.
-    fsm.tick(DT_CTRL)
+        # ------------------------------------------------------------------------------------------
+        # II. STATE MACHINE LOGIC
+        # ------------------------------------------------------------------------------------------
+        fsm.tick(DT_CTRL)
 
-    # ----------------------------------------------------------------------------------------------
-    # III. SOLVE INVERSE KINEMATICS
-    # ----------------------------------------------------------------------------------------------
-    dq_cmd, p_ik, quat_cur, _ = ikQP.ik_qp_velocity_step_pose(
-        ee_name=FRAME_CONTROL,
-        p_des=fsm_ctx.pose_ref,
-        quat_des=fsm_ctx.quat_ref,
-        q_current=q,
-        q_min=Q_MIN, q_max=Q_MAX,
-        dq_min=DQ_MIN, dq_max=DQ_MAX,
-        dt=DT_CTRL,
-        kp_pos=2 / DT_CTRL,
-        kp_ori=0.15 * (2 / DT_CTRL),
-        w_pos=pos_weight, w_ori=orientation_weight,
-        lam=fsm_ctx.joint_vel_weight,
-    )
+        # ------------------------------------------------------------------------------------------
+        # III. SOLVE INVERSE KINEMATICS
+        # ------------------------------------------------------------------------------------------
+        dq_cmd, p_ik, quat_cur, _ = ikQP.ik_qp_velocity_step_pose(
+            ee_name=FRAME_CONTROL,
+            p_des=fsm_ctx.pose_ref,
+            quat_des=fsm_ctx.quat_ref,
+            q_current=q,
+            q_min=Q_MIN, q_max=Q_MAX,
+            dq_min=DQ_MIN, dq_max=DQ_MAX,
+            dt=DT_CTRL,
+            kp_pos=2 / DT_CTRL,
+            kp_ori=0.15 * (2 / DT_CTRL),
+            w_pos=pos_weight, w_ori=orientation_weight,
+            lam=fsm_ctx.joint_vel_weight,
+        )
 
-    # ----------------------------------------------------------------------------------------------
-    # IV. SEND COMMANDS & SYNC
-    # ----------------------------------------------------------------------------------------------
-    q = ikQP.send_position_command(dq_cmd=dq_cmd, dt_ctrl=DT_CTRL, q_current=q)
+        # ------------------------------------------------------------------------------------------
+        # IV. SEND COMMANDS & SYNC
+        # ------------------------------------------------------------------------------------------
+        q = ikQP.send_position_command(dq_cmd=dq_cmd, dt_ctrl=DT_CTRL, q_current=q)
 
-    elapsed = time.time() - loop_start_time
-    if elapsed < DT_CTRL:
-        time.sleep(DT_CTRL - elapsed)
+        elapsed = time.time() - loop_start_time
+        if elapsed < DT_CTRL:
+            time.sleep(DT_CTRL - elapsed)
+
+except Exception as e:
+    logger.error(f"Control loop terminated due to an unexpected error or exception: {e}")
 
 logger.info("[SHUTDOWN] | Waiting to shutdown ...")
 time.sleep(10.0)  # Allow observation before ending
